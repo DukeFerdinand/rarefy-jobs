@@ -1,0 +1,70 @@
+generator client {
+  provider = "cargo prisma"
+  // The location to generate the client. Is relative to the position of the schema
+  output   = "../src/prisma.rs"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model AccessToken {
+  id            String      @id
+  token         String      @unique
+  created       DateTime    @default(now())
+  expires       DateTime?
+  revoked       Boolean     @default(false)
+  revokedAt     DateTime?
+  machineUserId String
+  MachineUser   MachineUser @relation(fields: [machineUserId], references: [id])
+}
+
+model InviteCode {
+  id   String  @id
+  code String  @unique
+  used Boolean @default(false)
+}
+
+model MachineUser {
+  id          String        @id
+  commonName  String
+  created     DateTime      @default(now())
+  allowedIps  String[]
+  token       String        @unique
+  AccessToken AccessToken[]
+}
+
+model SavedSearch {
+  id           String         @id
+  name         String
+  query        String
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime
+  userId       String
+  vinylOnly    Boolean        @default(true)
+  User         User           @relation(fields: [userId], references: [id])
+  SearchResult SearchResult[]
+}
+
+model SearchResult {
+  id          String      @id
+  url         String
+  price       String
+  endDate     DateTime
+  foundAt     DateTime    @default(now())
+  updatedAt   DateTime
+  searchId    String
+  startDate   DateTime?
+  image       String[]
+  SavedSearch SavedSearch @relation(fields: [searchId], references: [id])
+}
+
+model User {
+  id          String        @id
+  email       String        @unique
+  password    String
+  joined      DateTime      @default(now())
+  username    String        @unique
+  SavedSearch SavedSearch[]
+}

@@ -1,8 +1,6 @@
 extern crate serde_json;
 extern crate tokio;
-use futures::executor::block_on;
 
-use crate::message::Message;
 use redis::{ControlFlow, PubSubCommands};
 use std::error::Error;
 
@@ -14,10 +12,6 @@ pub fn subscribe(channel: String, tx: crossbeam::channel::Sender<String>) -> Res
         let _: () = con
             .subscribe(&[channel], |msg| {
                 let received: String = msg.get_payload().unwrap();
-                let message_obj = serde_json::from_str::<Message>(&received).unwrap();
-
-                println!("{:?}", message_obj.payload);
-                // block_on(tx.send(received)).unwrap();
                 tx.send(received).unwrap();
 
                 return ControlFlow::Continue;
