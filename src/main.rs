@@ -7,16 +7,16 @@ mod prisma;
 #[macro_use]
 extern crate log;
 extern crate simple_logger;
-
-use std::thread::sleep;
-use std::time::Duration;
-use message::{Message};
+extern crate dotenv;
 
 use tokio;
 
+use message::{Message};
+
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    simple_logger::SimpleLogger::new().env().init().unwrap();
+    dotenv::dotenv()?;
+    simple_logger::SimpleLogger::new().env().init()?;
     info!("Running crawler system");
 
 
@@ -31,39 +31,19 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         info!("connected to queue");
     }
 
-    info!("Waiting a few seconds for redis to subscribe...");
-    sleep(Duration::from_secs(3));
-    info!("ready!");
-
     // Start the async crawler thread
     info!("Spawning work loop...");
     loop {
-        info!("Waiting for message...");
         let msg = rx.recv();
 
         if let Ok(msg) = msg {
-            let message_obj = serde_json::from_str::<Message>(&msg).unwrap();
+            let message_obj = Message::from_js_string(msg);
 
             tokio::spawn(async move {
-               println!("Received message: {:?}", message_obj);
-                // handle message
+               info!("Received message: {:?}", message_obj);
             });
         } else {
             continue
         }
     }
-
-    // println!("Spawning message publisher thread...");
-    // tokio::spawn(async move {
-    //     println!("Sending a test message...");
-    //
-    //     loop {
-    //         println!("Sending a test message...");
-    //         let res = redis_publisher::publish_message(Message::new(Payload::Crawler(vec!["test".to_string()])));
-    //         if let Err(error) = res {
-    //             println!("Error publishing message: {:?}", error);
-    //         }
-    //         sleep(Duration::from_secs(3));
-    //     }
-    // });
 }
