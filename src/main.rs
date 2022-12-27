@@ -14,7 +14,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("Running crawler system");
 
     // Create a cross channel message bus
-    let (tx, mut rx) = tokio::sync::mpsc::channel::<String>(32);
+    let (tx, rx) = crossbeam::channel::unbounded::<String>();
 
     // Connect to redis and subscribe to the channel
     if let Err(error) = redis_subscriber::subscribe(String::from("crawler"), tx) {
@@ -32,13 +32,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("Spawning crawler thread");
     tokio::spawn(async move {
         loop {
-            let msg = rx.recv().await;
+            let msg = rx.recv();
 
             match msg {
-                Some(msg) => {
+                Ok(msg) => {
                     println!("Received message: {}", msg);
                 },
-                None => continue,
+                Err(_) => continue,
             }
         }
     });
