@@ -1,8 +1,8 @@
 mod message;
 mod redis_publisher;
 mod redis_subscriber;
-mod crawler;
 mod prisma;
+mod crawler;
 
 #[macro_use]
 extern crate log;
