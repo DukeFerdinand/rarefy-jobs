@@ -1,6 +1,7 @@
 mod message;
 mod redis_publisher;
 mod redis_subscriber;
+mod crawler;
 
 use std::thread::sleep;
 use std::time::Duration;
@@ -21,10 +22,19 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("Waiting a few seconds for redis to subscribe...");
     sleep(Duration::from_secs(3));
     println!("ready!");
+
+    println!("Spawning crawler thread");
+    // tokio::spawn(async {
+    //     loop {
+    //         println!("Hmmm, what should I do?");
+    //         sleep(Duration::from_secs(3));
+    //     }
+    // });
+
     //
-    // println!("Sending a test message...");
-    // redis_publisher::publish_message(Message::new(Payload::Crawler(vec!["test".to_string()])))?;
-    //
+    println!("Sending a test message...");
+    redis_publisher::publish_message(Message::new(Payload::Crawler(vec!["test".to_string()])))?;
+
     // println!("Sending a test message...");
     // redis_publisher::publish_message(Message::new(Payload::Crawler(vec!["test".to_string()])))?;
     //
