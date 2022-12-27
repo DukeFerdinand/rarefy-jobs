@@ -12,7 +12,12 @@ use tokio;
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("Running crawler system");
-    if let Err(error) = redis_subscriber::subscribe(String::from("crawler")) {
+
+    // Create a cross channel message bus
+    let (tx, mut rx) = tokio::sync::mpsc::channel::<String>(32);
+
+    // Connect to redis and subscribe to the channel
+    if let Err(error) = redis_subscriber::subscribe(String::from("crawler"), tx) {
         println!("{:?}", error);
         panic!("{:?}", error);
     } else {
@@ -23,13 +28,20 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     sleep(Duration::from_secs(3));
     println!("ready!");
 
+    // Start the async crawler thread
     println!("Spawning crawler thread");
-    // tokio::spawn(async {
-    //     loop {
-    //         println!("Hmmm, what should I do?");
-    //         sleep(Duration::from_secs(3));
-    //     }
-    // });
+    tokio::spawn(async move {
+        loop {
+            let msg = rx.recv().await;
+
+            match msg {
+                Some(msg) => {
+                    println!("Received message: {}", msg);
+                },
+                None => continue,
+            }
+        }
+    });
 
     //
     println!("Sending a test message...");

@@ -5,7 +5,7 @@ use crate::message::Message;
 use redis::{ControlFlow, PubSubCommands};
 use std::error::Error;
 
-pub fn subscribe(channel: String) -> Result<(), Box<dyn Error>> {
+pub fn subscribe(channel: String, tx: tokio::sync::mpsc::Sender<String>) -> Result<(), Box<dyn Error>> {
     let _ = tokio::spawn(async move {
         let client = redis::Client::open("redis://localhost").unwrap();
         let mut con = client.get_connection().unwrap();
