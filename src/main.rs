@@ -11,12 +11,12 @@ extern crate dotenv;
 
 use tokio;
 
-use message::{Message};
+use message::{Message, Payload};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     dotenv::dotenv()?;
-    simple_logger::SimpleLogger::new().env().init()?;
+    simple_logger::init_with_env()?;
     info!("Running crawler system");
 
 
@@ -36,12 +36,29 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     loop {
         let msg = rx.recv();
 
+        // Check if we have a message
         if let Ok(msg) = msg {
+            // Convert it into a shape we expect
             let message_obj = Message::from_js_string(msg);
 
-            tokio::spawn(async move {
-               info!("Received message: {:?}", message_obj);
-            });
+            // Check what kind of job we're dealing with
+            match message_obj.payload {
+                // TODO: Move this match arm block into another function for maintainability
+                Payload::Crawler(ids) => {
+                    // See if there are any pre-selected searches to scrape
+                    if let Some(selected) = ids {
+                        info!("Received crawler job with {:?} ids", selected);
+                    } else {
+                        info!("Received crawler job with no pre-selections, preparing to scrape all!");
+                        crawler::find_jobs::find_jobs().await.unwrap();
+                    }
+                }
+            }
+
+
+            // tokio::spawn(async move {
+            //
+            // });
         } else {
             continue
         }
