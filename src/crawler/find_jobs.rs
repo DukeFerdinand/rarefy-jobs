@@ -2,6 +2,8 @@ use crate::prisma;
 use crate::prisma::{saved_search};
 use crate::prisma::saved_search::Data as PrismaSavedSearch;
 
+use crate::info;
+
 enum CrawlerJobType {
     Buyee,
 }

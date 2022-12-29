@@ -1,6 +1,8 @@
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
+use crate::error;
+
 type SelectedCrawlIds = Option<Vec<JobId>>;
 
 #[derive(Debug, Serialize, Deserialize)]
