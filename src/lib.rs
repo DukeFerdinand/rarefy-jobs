@@ -5,3 +5,4 @@ pub mod prisma;
 pub mod crawler;
 pub mod scraper;
 pub mod logger;
+pub mod pubsub;
