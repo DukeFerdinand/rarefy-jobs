@@ -13,15 +13,14 @@ serde = { version = "1.0.152", features=["derive"] }
 serde_json = "1.0.91"
 crossbeam = "0.8"
 futures = "0.3.25"
-anyhow = "1.0"
 tokio-scoped = "0.2"
+reqwest = { version = "0.11", features = [ "json", "rustls-tls", "blocking", "brotli" ], default-features = false }
+scraper = "0.14"
+async-trait = "0.1.60"
 
 # Utilities
+anyhow = "1.0"
 log = "0.4.5"
 simple_logger = "4.0.0"
 colored = "2.0"
 chrono = "0.4"
-
-
-# These are for scraping/crawling
-reqwest = { version = "0.11", features = [ "json", "rustls-tls", "blocking", "brotli" ], default-features = false }

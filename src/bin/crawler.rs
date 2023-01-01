@@ -1,11 +1,11 @@
 #![feature(async_closure)]
 
 extern crate tokio;
-use crawlers::scraper::Scraper;
+use crawlers::rare_finder::RareFinder;
 
 #[tokio::main]
 async fn main() {
-    let mut scraper = Scraper::new();
+    let mut rare_finder = RareFinder::new();
 
-    scraper.run();
+    rare_finder.run();
 }

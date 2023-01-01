@@ -6,24 +6,24 @@ use crate::{error, info};
 use crossbeam::channel::{Receiver, Sender};
 
 /// The entrypoint for the Rarefy scraper
-pub struct Scraper {
+pub struct RareFinder {
     transmitter: Sender<JobEvent>,
     receiver: Receiver<JobEvent>,
     pubsub: PubSub,
 }
 
-impl Scraper {
-    pub fn new() -> Scraper {
+impl RareFinder {
+    pub fn new() -> RareFinder {
         let (tx, rx) = crossbeam::channel::unbounded();
 
-        Scraper {
+        RareFinder {
             transmitter: tx,
             receiver: rx,
             pubsub: PubSub::new("crawler"),
         }
     }
 
-    /// # Scraper.run
+    /// # RareFinder.run
     /// This runs the whole scraper stack, including the redis sub client
     pub fn run(&mut self) {
         tokio_scoped::scope(|thread_scope| {
