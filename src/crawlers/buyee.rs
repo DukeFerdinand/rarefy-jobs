@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 use chrono::{DateTime, Duration, NaiveDate, TimeZone, Utc};
 use scraper::html::Html;
-use scraper::Selector;
+use scraper::{ElementRef, Selector};
 use std::ops::Add;
 
 use crate::api::SavedSearch;
@@ -110,12 +110,9 @@ impl Crawler for Buyee {
         let search_document = Html::parse_document(&search_page);
 
         // Get the initial item cards (AKA search results)
-        let card_selector = Selector::parse("div.itemCard__item").unwrap();
-
-        let mut cards = Vec::new();
-        for card in search_document.select(&card_selector) {
-            cards.push(card);
-        }
+        let cards = search_document
+            .select(&Selector::parse("div.itemCard__item").unwrap())
+            .collect::<Vec<ElementRef>>();
 
         // Nothing to do if the length is zero :(
         if cards.len() == 0 {
