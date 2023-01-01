@@ -1,16 +1,15 @@
-use std::thread;
-use crossbeam::channel::{Sender, Receiver};
+extern crate tokio;
 
-use crate::{error, info};
 use crate::collector::Collector;
-use crate::pubsub::{JobConfig, JobType, PubSub};
+use crate::pubsub::{JobEvent, JobType, PubSub};
+use crate::{error, info};
+use crossbeam::channel::{Receiver, Sender};
 
 /// The entrypoint for the Rarefy scraper
 pub struct Scraper {
-    transmitter: Sender<JobConfig>,
-    receiver: Receiver<JobConfig>,
+    transmitter: Sender<JobEvent>,
+    receiver: Receiver<JobEvent>,
     pubsub: PubSub,
-    collector: Collector
 }
 
 impl Scraper {
@@ -21,22 +20,25 @@ impl Scraper {
             transmitter: tx,
             receiver: rx,
             pubsub: PubSub::new("crawler"),
-            collector: Collector::new()
         }
     }
 
     /// # Scraper.run
     /// This runs the whole scraper stack, including the redis sub client
     pub fn run(&mut self) {
-        thread::scope(|thread_scope| {
+        tokio_scoped::scope(|thread_scope| {
             // this must be in a new thread or other block-remover
             // as the redis subscriber function spawns an infinite blocking loop
-            thread_scope.spawn(|| {
+            // NOTE: at time of writing this is not async, but it can be with tokio
+            thread_scope.spawn(async {
+                // Spawn the blocking subscriber
                 let res = self.pubsub.subscribe(|job| {
                     let res = self.transmitter.send(job);
+
                     if let Err(e) = res {
                         error!("Got error sending message: {}", e)
                     }
+
                     Ok(())
                 });
 
@@ -47,16 +49,26 @@ impl Scraper {
 
             info!("Starting job loop");
             loop {
+                // Block until a message is received
                 let msg = self.receiver.recv();
+
+                // Handle message if okay
                 if let Ok(job) = msg {
-                    thread_scope.spawn(move || {
+                    // Then spawn a thread to handle this message
+                    thread_scope.spawn(async move {
                         let collector = Collector::new();
+                        // Check the job type and handle
                         match &job.job_type {
+                            // TODO: consider moving this into a separate function - self contained?
                             JobType::Crawler => {
                                 info!("Running crawler job");
-                                collector.collect_from_all()
-                            },
-                            _ => unimplemented!()
+                                if let Err(e) = collector.collect_from_all().await {
+                                    error!("Got error running collect_from_all: {}", e)
+                                } else {
+                                    info!("Success from crawler job")
+                                }
+                            }
+                            _ => unimplemented!(),
                         }
                     });
                 } else {

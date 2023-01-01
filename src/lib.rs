@@ -1,5 +1,5 @@
-pub mod message;
-pub mod scraper;
+pub mod api;
+pub mod collector;
 pub mod logger;
 pub mod pubsub;
-pub mod collector;
+pub mod scraper;
