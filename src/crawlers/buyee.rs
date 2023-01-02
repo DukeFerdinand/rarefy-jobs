@@ -1,5 +1,5 @@
 use async_trait::async_trait;
-use chrono::{DateTime, Duration, NaiveDate, TimeZone, Utc};
+use chrono::{Duration, NaiveDate, Utc};
 use scraper::html::Html;
 use scraper::{ElementRef, Selector};
 use std::ops::Add;
@@ -28,28 +28,28 @@ impl Buyee {
                 .build();
 
             // Get the HTML
-            let response = fetch.get(url).send().await;
+            let response = fetch.get(url).send().await?;
 
-            // Something happened when making a request to Buyee
-            if let Err(e) = response {
-                error!("Got status code {}", e.status().unwrap());
-                // error!("Got error when fetching buyee HTML: {}", e);
+            if response.status() != 200 {
+                error!("Error while fetching HTML for {}", search.query)
             }
 
-            let html_body = response?.text().await;
-
-            // Something happened when trying to get the HTML body from the response object
-            if let Err(_) = html_body {
-                error!(
-                    "Could not parse text body for {}, skipping :(",
-                    search.query
-                )
-            }
-
-            Ok(html_body.unwrap())
+            Ok(response.text().await?)
         } else {
             Err(anyhow::format_err!("Could not create http client!"))
         }
+    }
+
+    pub async fn get_listing_html(url: &str) -> Result<String, anyhow::Error> {
+        let fetch = get_http_client()?;
+
+        let response = fetch.get(format!("https://buyee.jp{}", url)).send().await?;
+
+        if response.status() != 200 {
+            error!("Error while fetching html for {}", url)
+        }
+
+        Ok(response.text().await?)
     }
 }
 
@@ -137,23 +137,33 @@ impl Crawler for Buyee {
                     format!("{}", e.value().attr("href").unwrap())
                 });
 
-            // Create initial listing object
-            let mut listing = Listing::new(price, url);
-
-            // tokio::task::spawn(async {
-            //     //
-            // });
-
             // Push it onto listing stack
-            listings.push(listing);
+            listings.push(Listing::new(price, url));
         }
-
-        info!("{:?}", listings);
 
         Ok(listings)
     }
 
-    async fn process(&self) -> Result<Self::ProcessOutput, anyhow::Error> {
-        todo!()
+    async fn process(
+        &self,
+        mut listing: Self::Output,
+    ) -> Result<Self::ProcessOutput, anyhow::Error> {
+        // Get the HTML for the listing page
+        let html = Buyee::get_listing_html(&listing.url).await?;
+        let document = Html::parse_document(&html);
+
+        // First scrape all of the image urls from the listing page
+        let mut images: Vec<String> = Vec::new();
+        for image_anchor in document.select(&Selector::parse("ul.slides > li > a").unwrap()) {
+            if let Some(image_url) = image_anchor.value().attr("href") {
+                images.push(image_url.into())
+            }
+        }
+
+        listing.set_images(images);
+
+        // Then get the listing details (except for images)
+
+        Ok(())
     }
 }

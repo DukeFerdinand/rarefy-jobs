@@ -117,6 +117,15 @@ impl Collector {
                         info!("> crawling for {}", search.query);
 
                         let results = Buyee::new().scrape(&search).await?;
+                        info!("-> Found {} listings for {}", results.len(), search.query);
+                        for listing in results {
+                            // These are sort of like goroutines as far as I can tell...
+                            // Should not incur massive overhead from doing this?
+                            tokio::task::spawn(async move {
+                                info!("-> Visiting {}", listing.url);
+                                let final_listing = Buyee::new().process(listing).await;
+                            });
+                        }
                     }
                 }
             }
